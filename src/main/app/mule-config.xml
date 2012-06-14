@@ -25,7 +25,7 @@ http://www.mulesoft.org/schema/mule/xml http://www.mulesoft.org/schema/mule/xml/
 http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
  ">
  
-	<context:property-placeholder location="mule.prod.properties" />
+	<context:property-placeholder location="mule.${mule.env}.properties" />
 	<github:config name="Github" user="${git.username}" password="${git.password}" doc:name="Github" />
 	<jira:config name="Jira" connectionUser="${jira.username}" connectionPassword="${jira.password}" connectionAddress="${jira.connectionAddress}" doc:name="Jira" />
 
@@ -101,7 +101,7 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
     	<logger level="INFO" message="Creating JIRA for  #[groovy:message.getInvocationProperty('gitRepoName')], issue number #[groovy:payload.getNumber()]" />
 	    <jira:create-issue-single-value-fields config-ref="Jira" summary="#[groovy:payload.getTitle()]" priority="6" description="*Created at #[groovy:payload.createdAt]* \\ \\ #[groovy:payload.getBody()]" project="CLDCONNECT" type="1" componentName="#[groovy:message.getInvocationProperty('componentName')]" componentId="#[groovy:message.getInvocationProperty('componentId')]" doc:name="JiraCreateIssue">
 			<jira:custom-fields>
-				<jira:custom-field key="${git.customField.gitIssueId}">#[groovy:payload.getNumber()]</jira:custom-field>
+				<jira:custom-field key="${git.customField.gitIssueId}">#[groovy:payload.getNumber().toString()]</jira:custom-field>
 				<jira:custom-field key="${git.customField.repoName}">#[groovy:message.getInvocationProperty('gitRepoName')]</jira:custom-field>
 				<jira:custom-field key="${jira.customField.connectorType}">Community</jira:custom-field>				
 			</jira:custom-fields>
