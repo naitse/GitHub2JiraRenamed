@@ -97,6 +97,8 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
     
     
     <flow name="jira.create.issue" processingStrategy="synchronous">
+    
+    	<logger level="INFO" message="Creating JIRA for  #[groovy:message.getInvocationProperty('gitRepoName')], issue number #[groovy:payload.getNumber()]" />
 	    <jira:create-issue-single-value-fields config-ref="Jira" summary="#[groovy:payload.getTitle()]" priority="6" description="*Created at #[groovy:payload.createdAt]* \\ \\ #[groovy:payload.getBody()]" project="CLDCONNECT" type="1" componentName="#[groovy:message.getInvocationProperty('componentName')]" componentId="#[groovy:message.getInvocationProperty('componentId')]" doc:name="JiraCreateIssue">
 			<jira:custom-fields>
 				<jira:custom-field key="${git.customField.gitIssueId}">#[groovy:payload.getNumber()]</jira:custom-field>
