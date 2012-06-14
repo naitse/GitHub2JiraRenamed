@@ -5,19 +5,10 @@
  * license, a copy of which has been included with this distribution in the
  * LICENSE.txt file.
  */
-package test.java.git2jira;
-
-import org.mule.api.MuleMessage;
-import org.mule.api.client.MuleClient;
-import org.mule.tck.junit4.FunctionalTestCase;
-import org.mule.transport.NullPayload;
+package git2jira;
 
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import org.mule.tck.junit4.FunctionalTestCase;
 
 public class HackatonTestCase extends FunctionalTestCase
 {

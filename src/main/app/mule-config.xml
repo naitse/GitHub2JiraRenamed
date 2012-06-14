@@ -86,6 +86,12 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
 			</choice>
     </flow>
     
+    <flow name="CloseGithubIssues">
+   		<jira:get-issues-from-jql-search config-ref="Jira" jqlSearch="${jira.closeGithubIssues.jql}" maxNumResults="1000" doc:name="Jira"/>
+		<collection-splitter />
+			<github:get-issues config-ref="Github" user="mulesoft" repository="#[groovy:message.getInvocationProperty('gitRepoName')]" doc:name="Get all the issues of the given GitHub repo name" />
+   		
+    </flow>
     
     
     
@@ -95,6 +101,7 @@ http://www.springframework.org/schema/context http://www.springframework.org/sch
 			<jira:custom-fields>
 				<jira:custom-field key="${git.customField.gitIssueId}">#[groovy:payload.getNumber()]</jira:custom-field>
 				<jira:custom-field key="${git.customField.repoName}">#[groovy:message.getInvocationProperty('gitRepoName')]</jira:custom-field>
+				<jira:custom-field key="${jira.customField.connectorType}">Community</jira:custom-field>				
 			</jira:custom-fields>
 		</jira:create-issue-single-value-fields>
 		<logger message="Jira issue created, JiraIsuue: #[groovy:payload.key] from GitRepo: #[groovy:message.getInvocationProperty('gitRepoName')] at JiraComponent: #[groovy:message.getInvocationProperty('componentName')]" level="INFO" />
