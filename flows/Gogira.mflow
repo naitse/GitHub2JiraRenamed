@@ -1,0 +1,824 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<mule-configuration xmlns="http://www.mulesoft.com/tooling/messageflow" name="Gogira">
+    <global-element type="http://www.springframework.org/schema/context/property-placeholder" name="Property Placeholder" entity-id="666cf760-0215-40ee-9005-980a1d20b384">
+        <properties>
+            <property value="mule.${mule.env}.properties" name="location"/>
+        </properties>
+    </global-element>
+    <global-element type="http://www.mulesoft.org/schema/mule/github/config" name="Github" entity-id="cc869837-d9b0-429b-9de2-c3719209d0df">
+        <properties>
+            <property value="Github" name="name"/>
+            <property value="${git.username}" name="user"/>
+            <property value="${git.password}" name="password"/>
+        </properties>
+    </global-element>
+    <global-element type="http://www.mulesoft.org/schema/mule/jira/config" name="Jira" entity-id="362f67e5-dc85-4660-8961-71a836ab3158">
+        <properties>
+            <property value="Jira" name="name"/>
+            <property value="${jira.username}" name="connectionUser"/>
+            <property value="${jira.password}" name="connectionPassword"/>
+            <property value="${jira.connectionAddress}" name="connectionAddress"/>
+        </properties>
+    </global-element>
+    <flow SubFlow="false" name="jira.close.GiHubIssues">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="312b2b28-705f-4f9e-b111-57b5adbc376f">
+            <multi-source type="org.mule.tooling.ui.modules.core.endpoint.Poller" name="Poll" entity-id="05553e9f-e7a1-48ac-b42d-2822bfba7b9c">
+                <properties>
+                    <property value="${poll.frequency}" name="frequency"/>
+                </properties>
+                <pattern type="http://www.mulesoft.org/schema/mule/jira/jira-connector" name="Jira" entity-id="dfca6b81-c27c-451f-b795-45f90e7e4230">
+                    <properties>
+                        <property value="Jira" name="config-ref"/>
+                        <property value="http://www.mulesoft.org/schema/mule/jira/get-issues-from-jql-search" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+                        <property value="Jira" name="config-ref"/>
+                        <property value="${jira.getClosedIssues.jql}" name="jqlSearch"/>
+                        <property value="1000" name="maxNumResults"/>
+                        <property name=""/>
+                        <property name="connectionUser"/>
+                        <property name="connectionPassword"/>
+                        <property name="connectionAddress"/>
+                    </properties>
+                </pattern>
+            </multi-source>
+            <scope type="http://www.mulesoft.org/schema/mule/core/foreach" name="Foreach" entity-id="c95f8504-ab71-4150-8240-efb0c494870d">
+                <properties>
+                    <property name="collection"/>
+                    <property name="counterVariableName"/>
+                    <property name="batchSize"/>
+                    <property name="rootMessageVariableName"/>
+                </properties>
+                <compartment entity-id="f6ed7896-ce93-4261-bd3d-a8a52213466b">
+                    <lane hadOnlyOneElement="false" entity-id="c15d4fcb-ba60-4b65-8d09-86846ffbd7cb">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/message-properties-transformer" name="persist resolution" entity-id="2a60fcd4-3ea6-480a-861d-cad8181b4dc9">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property value="true" name="overwrite"/>
+<property value="session" name="scope"/>
+<property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;0">
+    <property value="#[groovy:payload.resolution]" name="value"/>
+    <property value="jiraIssueResolution" name="key"/>
+</property-collection>
+                            </properties>
+                        </pattern>
+                        <scope type="http://www.mulesoft.org/schema/mule/core/foreach" name="customFieldValues" entity-id="12c6bd2d-37b5-4fbe-ada0-31d61cd24ab3">
+                            <properties>
+<property value="payload.customFieldValues" name="collection"/>
+<property name="counterVariableName"/>
+<property name="batchSize"/>
+<property name="rootMessageVariableName"/>
+                            </properties>
+                            <compartment entity-id="450a27ff-9c3e-4d07-8ec6-b689d261ff43">
+<lane hadOnlyOneElement="false" entity-id="ddd96449-1c67-418d-957b-e5ebab72aafe">
+    <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="0b545010-4b68-48e4-ac90-c0d742419707">
+        <properties>
+            <property-collection name="8d621a40-68e7-4741-827f-95eaead63926">
+                <property value="groovy:payload.customfieldId.equals('${git.customField.gitIssueId}')" name="choice.expression"/>
+            </property-collection>
+            <property-collection name="68c0bad9-d77a-4e45-b590-9657a0090aa7">
+                <property value="true" name="choice.otherwise"/>
+            </property-collection>
+            <property-collection name="1c3c3673-0bc7-4d1e-81eb-913a8fdfd7e4">
+                <property value="groovy:payload.customfieldId.equals('${git.customField.repoName}')" name="choice.expression"/>
+            </property-collection>
+        </properties>
+        <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="5f5b3f2d-d0cc-4440-80f5-2574751e2858"/>
+        <compartment entity-id="b036c39a-d6bc-4171-90e6-bddf9bbe4cdd">
+            <lane hadOnlyOneElement="false" entity-id="1c3c3673-0bc7-4d1e-81eb-913a8fdfd7e4">
+                <pattern type="http://www.mulesoft.org/schema/mule/core/message-properties-transformer" name="persist issue2closeRepoName" entity-id="a0b5cd0c-8d92-4261-858e-300f0372b3c6">
+                    <properties>
+                        <property name="returnClass"/>
+                        <property name="ignoreBadInput"/>
+                        <property name="encoding"/>
+                        <property name="mimeType"/>
+                        <property value="true" name="overwrite"/>
+                        <property value="session" name="scope"/>
+                        <property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;0">
+                            <property value="#[groovy:payload.values[0]]" name="value"/>
+                            <property value="issue2CloseRepoName" name="key"/>
+                        </property-collection>
+                    </properties>
+                </pattern>
+            </lane>
+            <lane hadOnlyOneElement="false" entity-id="8d621a40-68e7-4741-827f-95eaead63926">
+                <pattern type="http://www.mulesoft.org/schema/mule/core/message-properties-transformer" name="persist issue2CloseGitIssueId" entity-id="a53a3503-b37c-4fcc-a19a-0827959437cc">
+                    <properties>
+                        <property name="returnClass"/>
+                        <property name="ignoreBadInput"/>
+                        <property name="encoding"/>
+                        <property name="mimeType"/>
+                        <property value="true" name="overwrite"/>
+                        <property value="session" name="scope"/>
+                        <property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;0">
+                            <property value="#[groovy:payload.values[0]]" name="value"/>
+                            <property value="issue2CloseGitIssueId" name="key"/>
+                        </property-collection>
+                    </properties>
+                </pattern>
+            </lane>
+            <lane hadOnlyOneElement="false" entity-id="68c0bad9-d77a-4e45-b590-9657a0090aa7">
+                <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="2b4af5f3-b261-45ad-9ff6-6c75cd07376c">
+                    <properties>
+                        <property value="just the other customfield" name="message"/>
+                        <property value="DEBUG" name="level"/>
+                        <property name="category"/>
+                    </properties>
+                </pattern>
+            </lane>
+        </compartment>
+    </splitter>
+</lane>
+                            </compartment>
+                        </scope>
+                        <pattern type="http://www.mulesoft.org/schema/mule/github/github-connector" name="GetIssue" entity-id="d6d471be-4ec2-4563-88f6-2d16e362077c">
+                            <properties>
+<property value="Github" name="config-ref"/>
+<property value="http://www.mulesoft.org/schema/mule/github/get-issue" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property value="Github" name="config-ref"/>
+<property value="#[groovy:message.getSessionProperty('issue2CloseGitIssueId')]" name="issueId"/>
+<property value="#[groovy:message.getSessionProperty('issue2CloseRepoName')]" name="repository"/>
+<property value="${git.orgName}" name="user"/>
+                            </properties>
+                        </pattern>
+                        <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="4b50cc57-f486-4371-81fc-81144f0644ce">
+                            <properties>
+<property-collection name="bb5ea2f0-c2c3-4b50-ba79-861b50c63707">
+    <property value="groovy:!payload.state.equals('closed')" name="choice.expression"/>
+</property-collection>
+<property-collection name="ea690562-d1c2-4700-b6ef-29d8145c52bc">
+    <property value="true" name="choice.otherwise"/>
+</property-collection>
+                            </properties>
+                            <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="8d282d7a-0a9c-46cc-93f0-b52fbcc8aff0"/>
+                            <compartment entity-id="9d9f2498-3cc4-4892-a0e8-ab24a9d40358">
+<lane hadOnlyOneElement="false" entity-id="bb5ea2f0-c2c3-4b50-ba79-861b50c63707">
+    <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyComponent" name="Groovy" entity-id="c4aa6060-2a8d-4963-90d4-8088d1f9370a">
+        <properties>
+            <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script-for-properties;0">
+                <property value="Groovy" name="engine"/>
+                <property value="clossingComment.groovy" name="file"/>
+            </property-collection>
+            <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+                <property value="Groovy" name="engine"/>
+                <property value="clossingComment.groovy" name="file"/>
+            </property-collection>
+        </properties>
+    </pattern>
+    <pattern type="http://www.mulesoft.org/schema/mule/github/github-connector" name="Github" entity-id="7ec6c475-ee6e-4be4-95a3-132c6be98d46">
+        <properties>
+            <property value="Github" name="config-ref"/>
+            <property value="http://www.mulesoft.org/schema/mule/github/create-comment" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+            <property value="Github" name="config-ref"/>
+            <property value="#[payload]" name="comment"/>
+            <property value="#[groovy:message.getSessionProperty('issue2CloseGitIssueId')]" name="issueId"/>
+            <property value="#[groovy:message.getSessionProperty('issue2CloseRepoName')]" name="repository"/>
+            <property value="${git.orgName}" name="user"/>
+        </properties>
+    </pattern>
+    <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Log the comment creation" entity-id="37d14c62-08e1-4bb0-b18c-c1fd09a4d786">
+        <properties>
+            <property value="[COMMENTED] at issue #[groovy:message.getSessionProperty('issue2CloseGitIssueId')] from repo #[groovy:message.getSessionProperty('issue2CloseRepoName')]" name="message"/>
+            <property value="INFO" name="level"/>
+            <property name="category"/>
+        </properties>
+    </pattern>
+    <pattern type="http://www.mulesoft.org/schema/mule/github/github-connector" name="Github" entity-id="72697653-8dcd-4581-8f50-7d7759112c28">
+        <properties>
+            <property value="Github" name="config-ref"/>
+            <property value="http://www.mulesoft.org/schema/mule/github/close-issue" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+            <property value="Github" name="config-ref"/>
+            <property value="#[groovy:message.getSessionProperty('issue2CloseGitIssueId')]" name="issueId"/>
+            <property value="#[groovy:message.getSessionProperty('issue2CloseRepoName')]" name="repository"/>
+            <property value="${git.orgName}" name="user"/>
+        </properties>
+    </pattern>
+    <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Log the close event" entity-id="a97f66f9-a789-4133-964d-8ccbd928b7a6">
+        <properties>
+            <property value="[CLOSED] issue #[groovy:message.getSessionProperty('issue2CloseGitIssueId')] from repo #[groovy:message.getSessionProperty('issue2CloseRepoName')]" name="message"/>
+            <property value="INFO" name="level"/>
+            <property name="category"/>
+        </properties>
+    </pattern>
+</lane>
+<lane hadOnlyOneElement="false" entity-id="ea690562-d1c2-4700-b6ef-29d8145c52bc">
+    <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="cb94b304-f5b2-4f0a-ab3b-dc66236e0527">
+        <properties>
+            <property value="[ALREADY CLOSED] issue #[groovy:message.getSessionProperty('issue2CloseGitIssueId')] from repo #[groovy:message.getSessionProperty('issue2CloseRepoName')]" name="message"/>
+            <property value="INFO" name="level"/>
+            <property name="category"/>
+        </properties>
+    </pattern>
+</lane>
+                            </compartment>
+                        </splitter>
+                    </lane>
+                </compartment>
+            </scope>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/flow-ref" name="Start sync issues" entity-id="edc977c0-f6aa-4f97-a4e6-5723422ca9e1">
+                <properties>
+                    <property value="jira.sync.issues" name="name"/>
+                </properties>
+            </pattern>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="jira.sync.issues">
+        <properties>
+            <property name="processingStrategy2"/>
+            <property name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="b2a56941-d70e-4ef6-8a31-a69bdd1bebaa">
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="87995748-b1c2-4a7c-9494-9e28ff019ce4">
+                <properties>
+                    <property value="[STARTING SYNC...]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/github/github-connector" name="Get Github repos" entity-id="de1b6b5d-4ce5-4b8f-aaab-b0a9b27fa175">
+                <properties>
+                    <property value="Github" name="config-ref"/>
+                    <property value="http://www.mulesoft.org/schema/mule/github/get-org-repositories" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+                    <property value="Github" name="config-ref"/>
+                    <property value="${git.orgName}" name="organization"/>
+                </properties>
+            </pattern>
+            <scope type="http://www.mulesoft.org/schema/mule/core/enricher" name="Message Enricher" entity-id="2b08d263-ece3-479e-bd56-2dad8de622ca">
+                <properties>
+                    <property name="source"/>
+                    <property value="#[variable:jiraComponents]" name="target"/>
+                </properties>
+                <compartment entity-id="da0fef47-92fd-47b5-9f29-44713bea5ff4">
+                    <lane hadOnlyOneElement="false" entity-id="17b10189-6e44-4731-986f-4c05458361df">
+                        <pattern type="http://www.mulesoft.org/schema/mule/jira/jira-connector" name="Get Jira Components" entity-id="329eca85-a354-41f8-990d-f390f8d0a6c5">
+                            <properties>
+<property value="Jira" name="config-ref"/>
+<property value="http://www.mulesoft.org/schema/mule/jira/get-components" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property value="Jira" name="config-ref"/>
+<property value="CLDCONNECT" name="projectKey"/>
+<property name=""/>
+<property name="connectionUser"/>
+<property name="connectionPassword"/>
+<property name="connectionAddress"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                </compartment>
+            </scope>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/message-properties-transformer" name="load values from .properties" entity-id="fe08a6eb-a8a0-4f22-a0b8-13508acdbd2a">
+                <properties>
+                    <property name="returnClass"/>
+                    <property name="ignoreBadInput"/>
+                    <property name="encoding"/>
+                    <property name="mimeType"/>
+                    <property name="overwrite"/>
+                    <property value="invocation" name="scope"/>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;0">
+                        <property value="${git.repoFilter.pattern}" name="value"/>
+                        <property value="gitRepoFilterPattern" name="key"/>
+                    </property-collection>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;1">
+                        <property value="${git.defaultRepo.id}" name="value"/>
+                        <property value="defaultRepoId" name="key"/>
+                    </property-collection>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;2">
+                        <property value="${git.defaultRepo.name}" name="value"/>
+                        <property value="defaultRepoName" name="key"/>
+                    </property-collection>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;3">
+                        <property value="${git.externalRepos}" name="value"/>
+                        <property value="gitExternalReposFlag" name="key"/>
+                    </property-collection>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;4">
+                        <property value="${git.externalRepo.csv}" name="value"/>
+                        <property value="gitExternalRepoCsv" name="key"/>
+                    </property-collection>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyComponent" name="Filter GitHub Repos" entity-id="62fd22f8-181c-4ae1-8aaa-c780da40c1ca">
+                <properties>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script-for-properties;0">
+                        <property value="Groovy" name="engine"/>
+                        <property value="filterRepos.groovy" name="file"/>
+                    </property-collection>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+                        <property value="Groovy" name="engine"/>
+                        <property value="filterRepos.groovy" name="file"/>
+                    </property-collection>
+                </properties>
+            </pattern>
+            <scope type="http://www.mulesoft.org/schema/mule/core/foreach" name="Foreach GitHub repo" entity-id="baeb1349-5967-4cdd-8c2d-ca696e7da278">
+                <properties>
+                    <property name="collection"/>
+                    <property name="counterVariableName"/>
+                    <property name="batchSize"/>
+                    <property name="rootMessageVariableName"/>
+                </properties>
+                <compartment entity-id="b9b5da26-65f8-4fe1-bf55-24e2529db087">
+                    <lane hadOnlyOneElement="false" entity-id="58e350ee-c33f-4033-90c2-ae122df209b2">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/message-properties-transformer" name="Persist gitRepoName" entity-id="3b10381c-201b-4965-8552-866af21666a4">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property value="true" name="overwrite"/>
+<property value="invocation" name="scope"/>
+<property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;0">
+    <property value="#[payload:]" name="value"/>
+    <property value="gitRepoName" name="key"/>
+</property-collection>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/github/github-connector" name="Get all the issues of the given GitHub repo name" entity-id="dd163346-6796-4f1f-ac9a-1e0904441b2c">
+                            <properties>
+<property value="Github" name="config-ref"/>
+<property value="http://www.mulesoft.org/schema/mule/github/get-issues" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property value="Github" name="config-ref"/>
+<property value="#[groovy:message.getInvocationProperty('gitRepoName')]" name="repository"/>
+<property value="${git.orgName}" name="user"/>
+                            </properties>
+                        </pattern>
+                        <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="2d5c72f9-35dd-414f-9e6f-482a2b1d50bc">
+                            <properties>
+<property-collection name="56151d88-019f-4736-89d8-9927e53046ca">
+    <property value="true" name="choice.otherwise"/>
+</property-collection>
+<property-collection name="1e3018c8-b769-4359-8787-fc7afec29184">
+    <property value="payload.size() &gt; 0" name="choice.expression"/>
+</property-collection>
+                            </properties>
+                            <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="99bb7733-2333-4621-b271-a3860d5ce086"/>
+                            <compartment entity-id="7fa8325a-0925-472f-bae3-70a4424d40f6">
+<lane hadOnlyOneElement="false" entity-id="1e3018c8-b769-4359-8787-fc7afec29184">
+    <scope type="http://www.mulesoft.org/schema/mule/core/foreach" name="Foreach Issue at GitHub" entity-id="ec95ae27-24b8-479f-840e-52ae0db46fa1">
+        <properties>
+            <property name="collection"/>
+            <property name="counterVariableName"/>
+            <property name="batchSize"/>
+            <property name="rootMessageVariableName"/>
+        </properties>
+        <compartment entity-id="190e01da-987f-4c5b-8d86-07e9f9fab3f8">
+            <lane hadOnlyOneElement="false" entity-id="55e59042-c455-4dfd-8757-60da5b201fed">
+                <pattern type="http://www.mulesoft.org/schema/mule/core/message-properties-transformer" name="Persist gitIssueId &amp; gitCommentsAmount" entity-id="ad5bd374-2a34-4af9-9412-fbf9364a9112">
+                    <properties>
+                        <property name="returnClass"/>
+                        <property name="ignoreBadInput"/>
+                        <property name="encoding"/>
+                        <property name="mimeType"/>
+                        <property value="true" name="overwrite"/>
+                        <property value="invocation" name="scope"/>
+                        <property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;0">
+                            <property value="#[groovy:payload.getNumber()]" name="value"/>
+                            <property value="gitIssueId" name="key"/>
+                        </property-collection>
+                        <property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;1">
+                            <property value="#[groovy:payload.comments]" name="value"/>
+                            <property value="gitIssueComments" name="key"/>
+                        </property-collection>
+                    </properties>
+                </pattern>
+                <scope type="http://www.mulesoft.org/schema/mule/core/enricher" name="poll" entity-id="87a47161-1beb-4e14-8016-6e5c2c01c5b4">
+                    <properties>
+                        <property name="source"/>
+                        <property value="#[variable:matchingJiraIssues]" name="target"/>
+                    </properties>
+                    <compartment entity-id="2222ad9a-4ff1-464f-901c-976c172de3e8">
+                        <lane hadOnlyOneElement="false" entity-id="848b6f7b-238a-4879-98bb-26b5167eaee0">
+                            <pattern type="http://www.mulesoft.org/schema/mule/jira/jira-connector" name="Query Jira in order to see if the GitHub issue is already at Jira" entity-id="cbcd7dc5-e048-48bf-b5ff-3112676219e5">
+<properties>
+    <property value="Jira" name="config-ref"/>
+    <property value="http://www.mulesoft.org/schema/mule/jira/get-issues-from-jql-search" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+    <property value="Jira" name="config-ref"/>
+    <property value="${jira.getIssues.jql}" name="jqlSearch"/>
+    <property value="1000" name="maxNumResults"/>
+    <property name=""/>
+    <property name="connectionUser"/>
+    <property name="connectionPassword"/>
+    <property name="connectionAddress"/>
+</properties>
+                            </pattern>
+                        </lane>
+                    </compartment>
+                </scope>
+                <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="fbccc0ef-795a-44c1-b815-432558ce9453">
+                    <properties>
+                        <property-collection name="24af540e-79e8-4741-b101-acdb4a92bb1e">
+                            <property value="groovy:message.getInvocationProperty('matchingJiraIssues').isEmpty()" name="choice.expression"/>
+                        </property-collection>
+                        <property-collection name="0726e3b3-b037-46e6-b321-6d92aae76e17">
+                            <property value="true" name="choice.otherwise"/>
+                        </property-collection>
+                    </properties>
+                    <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="6da2f3a1-9e54-4356-8546-9bacb6f8933e"/>
+                    <compartment entity-id="a1f59ea0-f0a7-4d4b-a0e1-278bb2ab025e">
+                        <lane hadOnlyOneElement="false" entity-id="24af540e-79e8-4741-b101-acdb4a92bb1e">
+                            <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyComponent" name="see if there is a component at Jira" entity-id="9598cb14-b73f-4995-8942-91771716951a">
+<properties>
+    <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script-for-properties;0">
+        <property value="Groovy" name="engine"/>
+        <property value="matchComponents.groovy" name="file"/>
+    </property-collection>
+    <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+        <property value="Groovy" name="engine"/>
+        <property value="matchComponents.groovy" name="file"/>
+    </property-collection>
+</properties>
+                            </pattern>
+                            <pattern type="http://www.mulesoft.org/schema/mule/core/flow-ref" name="create issue" entity-id="923d0a36-7e67-40c2-b848-8a5ed26f1902">
+<properties>
+    <property value="jira.create.issue" name="name"/>
+</properties>
+                            </pattern>
+                        </lane>
+                        <lane hadOnlyOneElement="false" entity-id="0726e3b3-b037-46e6-b321-6d92aae76e17">
+                            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="525c5c54-0a4a-46c0-9e63-65aac0290159">
+<properties>
+    <property value="[ALREADY ON JIRA] github repo: #[groovy:message.getInvocationProperty('gitRepoName')], github issue: #[groovy:message.getInvocationProperty('gitIssueId')]" name="message"/>
+    <property value="INFO" name="level"/>
+    <property name="category"/>
+</properties>
+                            </pattern>
+                            <pattern type="http://www.mulesoft.org/schema/mule/core/flow-ref" name="sync comments" entity-id="5f475232-5d42-4834-a0c1-b5aa5e4a6eb6">
+<properties>
+    <property value="jira.sync.comments" name="name"/>
+</properties>
+                            </pattern>
+                        </lane>
+                    </compartment>
+                </splitter>
+            </lane>
+        </compartment>
+    </scope>
+</lane>
+<lane hadOnlyOneElement="false" entity-id="56151d88-019f-4736-89d8-9927e53046ca">
+    <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="11d18479-9a44-4e20-a05b-bf2fc327b4fa">
+        <properties>
+            <property value="[NO NEW ISSUES] at github repo: #[groovy:message.getInvocationProperty('gitRepoName')]" name="message"/>
+            <property value="INFO" name="level"/>
+            <property name="category"/>
+        </properties>
+    </pattern>
+</lane>
+                            </compartment>
+                        </splitter>
+                    </lane>
+                </compartment>
+            </scope>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="jira.create.issue">
+        <properties>
+            <property value="synchronous" name="processingStrategy2"/>
+            <property value="synchronous" name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="64ad089e-55cb-4022-8df2-50a1aa9f4e69">
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="0150e0c9-c9f0-422f-ae52-67057adcbba8">
+                <properties>
+                    <property value="[creating] JIRA for  #[groovy:message.getInvocationProperty('gitRepoName')], issue number #[groovy:payload.getNumber()]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/jira/jira-connector" name="JiraCreateIssue" entity-id="8b8da519-d92f-4620-a6a9-18293e209f41">
+                <properties>
+                    <property value="Jira" name="config-ref"/>
+                    <property value="http://www.mulesoft.org/schema/mule/jira/create-issue-single-value-fields" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+                    <property value="Jira" name="config-ref"/>
+                    <property name="assignee"/>
+                    <property name="dueDate"/>
+                    <property name="environment"/>
+                    <property value="6" name="priority"/>
+                    <property name="reporter"/>
+                    <property name="votes"/>
+                    <property value="#[groovy:message.getInvocationProperty('componentId')]" name="componentId"/>
+                    <property value="#[groovy:message.getInvocationProperty('componentName')]" name="componentName"/>
+                    <property value="#[groovy:payload.getTitle()]" name="summary"/>
+                    <property value="*Created by #[groovy:payload.user.login]*, at #[groovy:payload.createdAt] \\ \\ #[groovy:payload.getBody()]" name="description"/>
+                    <property value="CLDCONNECT" name="project"/>
+                    <property value="1" name="type"/>
+                    <property name=""/>
+                    <property name="connectionUser"/>
+                    <property name="connectionPassword"/>
+                    <property name="connectionAddress"/>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/jira/create-issue-single-value-fields-custom-fields;0">
+                        <property-collection name="@http://www.mulesoft.org/schema/mule/jira/create-issue-single-value-fields-custom-field;3">
+                            <property value="Community" name="value"/>
+                            <property value="${jira.customField.connectorType}" name="key"/>
+                        </property-collection>
+                        <property-collection name="@http://www.mulesoft.org/schema/mule/jira/create-issue-single-value-fields-custom-field;2">
+                            <property value="#[groovy:message.getInvocationProperty('gitRepoName')]" name="value"/>
+                            <property value="${git.customField.repoName}" name="key"/>
+                        </property-collection>
+                        <property-collection name="@http://www.mulesoft.org/schema/mule/jira/create-issue-single-value-fields-custom-field;1">
+                            <property value="#[groovy:payload.getNumber().toString()]" name="value"/>
+                            <property value="${git.customField.gitIssueId}" name="key"/>
+                        </property-collection>
+                    </property-collection>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="0e2e2153-a827-4228-ac71-0ecebb33aa14">
+                <properties>
+                    <property value="[CREATED] Jira issue created, JiraIsuue: #[groovy:payload.key] from GitRepo: #[groovy:message.getInvocationProperty('gitRepoName')] at JiraComponent: #[groovy:message.getInvocationProperty('componentName')]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="cda064cc-f283-461f-9f52-c83433312994">
+                <properties>
+                    <property-collection name="aca0893c-a815-404d-afd3-3c9c47e49a0a">
+                        <property value="groovy:message.getInvocationProperty('gitIssueComments') &gt; 0" name="choice.expression"/>
+                    </property-collection>
+                    <property-collection name="ceef5739-2f7a-4035-b3c1-270100affb8e">
+                        <property value="true" name="choice.otherwise"/>
+                    </property-collection>
+                </properties>
+                <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="b44dee75-e56c-4029-8af1-6528f52db8c5"/>
+                <compartment entity-id="c7a53239-fe1e-418f-98be-37458e976537">
+                    <lane hadOnlyOneElement="false" entity-id="aca0893c-a815-404d-afd3-3c9c47e49a0a">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/message-properties-transformer" name="Persist jiraIssueKey" entity-id="8a2a8e22-fda2-4ad7-b0ec-2d60fbe59c9f">
+                            <properties>
+<property name="returnClass"/>
+<property name="ignoreBadInput"/>
+<property name="encoding"/>
+<property name="mimeType"/>
+<property value="true" name="overwrite"/>
+<property value="invocation" name="scope"/>
+<property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;0">
+    <property value="#[groovy:payload.key]" name="value"/>
+    <property value="jiraIssueKey" name="key"/>
+</property-collection>
+                            </properties>
+                        </pattern>
+                        <pattern type="http://www.mulesoft.org/schema/mule/github/github-connector" name="get GithubIssue comments" entity-id="64ddd05d-4a8a-44ae-b40d-ddb8cdaaf908">
+                            <properties>
+<property value="Github" name="config-ref"/>
+<property value="http://www.mulesoft.org/schema/mule/github/get-comments" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property value="Github" name="config-ref"/>
+<property value="#[groovy:message.getInvocationProperty('gitIssueId')]" name="issueId"/>
+<property value="#[groovy:message.getInvocationProperty('gitRepoName')]" name="repository"/>
+<property value="${git.orgName}" name="user"/>
+                            </properties>
+                        </pattern>
+                        <scope type="http://www.mulesoft.org/schema/mule/core/foreach" name="Foreach GitHub comment" entity-id="d10b3ec4-7a5d-4933-8f9b-ae0c78c288ae">
+                            <properties>
+<property name="collection"/>
+<property name="counterVariableName"/>
+<property name="batchSize"/>
+<property name="rootMessageVariableName"/>
+                            </properties>
+                            <compartment entity-id="47903d92-b130-4898-82ca-25c932210bcd">
+<lane hadOnlyOneElement="false" entity-id="07d5090b-84a2-42e9-84fe-0c73b23b3ce4">
+    <pattern type="http://www.mulesoft.org/schema/mule/core/flow-ref" name="jira.add.comment" entity-id="1dfd9e2c-52d4-479c-b0df-5116dda465ec">
+        <properties>
+            <property value="jira.add.comment" name="name"/>
+        </properties>
+    </pattern>
+</lane>
+                            </compartment>
+                        </scope>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="ceef5739-2f7a-4035-b3c1-270100affb8e">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="f25f9cce-afdb-4ca7-9117-2578ca6edaba">
+                            <properties>
+<property value="[NO COMMENTS] at github for issue: #[groovy:message.getInvocationProperty('jiraIssueKey')]" name="message"/>
+<property value="INFO" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                </compartment>
+            </splitter>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="jira.add.comment">
+        <properties>
+            <property value="synchronous" name="processingStrategy2"/>
+            <property value="synchronous" name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="a87d2f7e-6efa-471a-a3c5-140d706421b5">
+            <pattern type="http://www.mulesoft.org/schema/mule/scripting/component" name="Format the comment" entity-id="6754952c-f5f5-4585-aed3-153448f1e51a">
+                <properties>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script-for-properties;0">
+                        <property value="def body = payload.id +&quot; | Commenter: *&quot; + payload.user.login + &quot;* | Created at: &quot; + payload.createdAt + &quot;\n \n&quot; + payload.body&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;return payload = body" name="text"/>
+                        <property value="groovy" name="engine"/>
+                    </property-collection>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+                        <property value="def body = payload.id +&quot; | Commenter: *&quot; + payload.user.login + &quot;* | Created at: &quot; + payload.createdAt + &quot;\n \n&quot; + payload.body&#xA;&#x9;&#x9;&#x9;&#x9;&#x9;return payload = body" name="text"/>
+                        <property value="groovy" name="engine"/>
+                    </property-collection>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="6c6bd397-d827-4238-83fb-686134bb3ead">
+                <properties>
+                    <property value="[creating comment] at Jira Issue: #[groovy:message.getInvocationProperty('jiraIssueKey')]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/jira/jira-connector" name="Add the comment" entity-id="278e0655-4232-4d0d-b26f-bf0a8d3139ac">
+                <properties>
+                    <property value="Jira" name="config-ref"/>
+                    <property value="http://www.mulesoft.org/schema/mule/jira/add-comment" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+                    <property value="Jira" name="config-ref"/>
+                    <property value="testCommenter" name="commentAuthor"/>
+                    <property value="#[payload:]" name="commentBody"/>
+                    <property name="commentGroupLevel"/>
+                    <property name="commentRoleLevel"/>
+                    <property value="#[groovy:message.getInvocationProperty('jiraIssueKey')]" name="issueKey"/>
+                    <property name=""/>
+                    <property name="connectionUser"/>
+                    <property name="connectionPassword"/>
+                    <property name="connectionAddress"/>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="432fd8fe-f5dd-4d27-ae87-1ee0246e78fd">
+                <properties>
+                    <property value="[COMMENT CREATED] at Jira Issue: #[groovy:message.getInvocationProperty('jiraIssueKey')]" name="message"/>
+                    <property value="INFO" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+        </lane>
+    </flow>
+    <flow SubFlow="false" name="jira.sync.comments">
+        <properties>
+            <property value="synchronous" name="processingStrategy2"/>
+            <property value="synchronous" name="processingStrategy"/>
+            <property name="bussinessEventsLabel"/>
+            <property name="tracking:enable-default-events"/>
+        </properties>
+        <lane hadOnlyOneElement="false" entity-id="ec3480a7-e5e6-4b4b-a24b-4fb1d5d1f893">
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="fbfc826c-b9b1-4ef4-bb7c-7d1702577fcf">
+                <properties>
+                    <property value="start sync comments:  #[groovy:message.getInvocationProperty('matchingJiraIssues')[0].key]" name="message"/>
+                    <property value="DEBUG" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/message-properties-transformer" name="Persist jiraIssueKey" entity-id="c960b14c-0cff-4173-8363-4a90cd677ac7">
+                <properties>
+                    <property name="returnClass"/>
+                    <property name="ignoreBadInput"/>
+                    <property name="encoding"/>
+                    <property name="mimeType"/>
+                    <property value="true" name="overwrite"/>
+                    <property value="invocation" name="scope"/>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/core/add-message-property;0">
+                        <property value="#[groovy:message.getInvocationProperty('matchingJiraIssues')[0].key]" name="value"/>
+                        <property value="jiraIssueKey" name="key"/>
+                    </property-collection>
+                </properties>
+            </pattern>
+            <scope type="http://www.mulesoft.org/schema/mule/core/enricher" name="Query Jira in order to get the amount of comments in the issue" entity-id="7fb5d52c-2b6b-4619-b2e8-99b11fd941c5">
+                <properties>
+                    <property name="source"/>
+                    <property value="#[variable:jiraIssueComments]" name="target"/>
+                </properties>
+                <compartment entity-id="59dc0ef9-9c15-4f1d-b172-94ba20febedd">
+                    <lane hadOnlyOneElement="false" entity-id="39993e62-455a-4f68-b37c-0be21b313257">
+                        <pattern type="http://www.mulesoft.org/schema/mule/jira/jira-connector" name="Jira" entity-id="8aa9309d-e642-4b45-8ca3-94bbbc1f3567">
+                            <properties>
+<property value="Jira" name="config-ref"/>
+<property value="http://www.mulesoft.org/schema/mule/jira/get-comments" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property value="Jira" name="config-ref"/>
+<property value="#[groovy:message.getInvocationProperty('jiraIssueKey')]" name="issueKey"/>
+<property name=""/>
+<property name="connectionUser"/>
+<property name="connectionPassword"/>
+<property name="connectionAddress"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                </compartment>
+            </scope>
+            <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="f04fce32-22f2-4cbe-8f20-5bc36201ead6">
+                <properties>
+                    <property value="jiraIssueComments: #[groovy:message.getInvocationProperty('jiraIssueComments').size()]" name="message"/>
+                    <property value="DEBUG" name="level"/>
+                    <property name="category"/>
+                </properties>
+            </pattern>
+            <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyComponent" name="Groovy" entity-id="833d7ba1-48e2-43bd-b842-1e3e8c6a5b9d">
+                <properties>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script-for-properties;0">
+                        <property value="def i= 0;&#xA;if (message.getInvocationProperty('jiraIssueComments').size() != 0){&#xA;&#x9;for(jiraComment in message.getInvocationProperty('jiraIssueComments')){&#xA;&#x9;if(jiraComment.body.contains('| Commenter:')){&#xA;&#x9;&#x9;i++&#xA;&#x9;}&#xA;   }&#xA; }&#xA;&#xA;return (String) i;" name="text"/>
+                        <property value="Groovy" name="engine"/>
+                    </property-collection>
+                    <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+                        <property value="def i= 0;&#xA;if (message.getInvocationProperty('jiraIssueComments').size() != 0){&#xA;&#x9;for(jiraComment in message.getInvocationProperty('jiraIssueComments')){&#xA;&#x9;if(jiraComment.body.contains('| Commenter:')){&#xA;&#x9;&#x9;i++&#xA;&#x9;}&#xA;   }&#xA; }&#xA;&#xA;return (String) i;" name="text"/>
+                        <property value="Groovy" name="engine"/>
+                    </property-collection>
+                </properties>
+            </pattern>
+            <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="bf750962-d6f0-439f-a3e8-8a1c10ade2d0">
+                <properties>
+                    <property-collection name="c5e98275-d3b2-4d55-9e24-d8b51fc3c9fd">
+                        <property value="true" name="choice.otherwise"/>
+                    </property-collection>
+                    <property-collection name="364d52e4-193e-4c73-af7d-24c92142755f">
+                        <property value="groovy:!payload.equals(message.getInvocationProperty('gitIssueComments'))" name="choice.expression"/>
+                    </property-collection>
+                </properties>
+                <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="849abb7d-e484-4d30-b0d7-106c5eb4882c"/>
+                <compartment entity-id="57a95dae-e25c-42fd-b945-491f64851ad5">
+                    <lane hadOnlyOneElement="false" entity-id="364d52e4-193e-4c73-af7d-24c92142755f">
+                        <pattern type="http://www.mulesoft.org/schema/mule/github/github-connector" name="Get Github comments" entity-id="6e95a629-e35e-4521-afb8-3803a78bae12">
+                            <properties>
+<property value="Github" name="config-ref"/>
+<property value="http://www.mulesoft.org/schema/mule/github/get-comments" name="org.mule.tooling.ui.modules.core.widgets.meta.ModeAttribute"/>
+<property value="Github" name="config-ref"/>
+<property value="#[groovy:message.getInvocationProperty('gitIssueId')]" name="issueId"/>
+<property value="#[groovy:message.getInvocationProperty('gitRepoName')]" name="repository"/>
+<property value="${git.orgName}" name="user"/>
+                            </properties>
+                        </pattern>
+                        <scope type="http://www.mulesoft.org/schema/mule/core/foreach" name="Foreach" entity-id="43294c05-3415-4ad9-bb2e-441f0e88e867">
+                            <properties>
+<property name="collection"/>
+<property name="counterVariableName"/>
+<property name="batchSize"/>
+<property name="rootMessageVariableName"/>
+                            </properties>
+                            <compartment entity-id="04b864c7-34cf-48b7-a5c3-52b6f6f44668">
+<lane hadOnlyOneElement="false" entity-id="0babf34b-9bcb-4d8f-a0fe-91c7656f87f3">
+    <pattern type="http://www.mulesoft.org/schema/mule/scripting/groovyComponent" name="Groovy" entity-id="2a4326d3-8a90-4341-aecc-e81293689574">
+        <properties>
+            <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script-for-properties;0">
+                <property value="Groovy" name="engine"/>
+                <property value="commentsValidator.groovy" name="file"/>
+            </property-collection>
+            <property-collection name="@http://www.mulesoft.org/schema/mule/scripting/script;0">
+                <property value="Groovy" name="engine"/>
+                <property value="commentsValidator.groovy" name="file"/>
+            </property-collection>
+        </properties>
+    </pattern>
+    <splitter type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="dede521f-92d7-4a3e-8c20-6bf7f3f0031f">
+        <properties>
+            <property-collection name="5cf95a1f-5566-4492-92fa-53124cc3eb8a">
+                <property value="groovy:message.getInvocationProperty('commentExists').isEmpty()" name="choice.expression"/>
+            </property-collection>
+            <property-collection name="375249bc-be04-47f5-b9ea-795be57af3df">
+                <property value="true" name="choice.otherwise"/>
+            </property-collection>
+        </properties>
+        <pattern type="org.mule.tooling.ui.modules.core.pattern.cbr" name="Choice" entity-id="5da392b8-4f22-4eb5-87d3-a6ba231bfa93"/>
+        <compartment entity-id="5bed1b70-2b3f-492d-a80b-9ee9fd76bbfc">
+            <lane hadOnlyOneElement="false" entity-id="5cf95a1f-5566-4492-92fa-53124cc3eb8a">
+                <pattern type="http://www.mulesoft.org/schema/mule/core/flow-ref" name="add comment" entity-id="63173196-d0b3-48d2-98d7-c31395257659">
+                    <properties>
+                        <property value="jira.add.comment" name="name"/>
+                    </properties>
+                </pattern>
+                <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="e67f4ada-d9c3-4d7d-81fa-6663b380f2c5">
+                    <properties>
+                        <property value="comments synched" name="message"/>
+                        <property value="INFO" name="level"/>
+                        <property name="category"/>
+                    </properties>
+                </pattern>
+            </lane>
+            <lane hadOnlyOneElement="false" entity-id="375249bc-be04-47f5-b9ea-795be57af3df">
+                <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="c7f67e47-ace9-4691-96fa-eb8a9bf348b8">
+                    <properties>
+                        <property value="No new comments at GitHub" name="message"/>
+                        <property value="DEBUG" name="level"/>
+                        <property name="category"/>
+                    </properties>
+                </pattern>
+            </lane>
+        </compartment>
+    </splitter>
+</lane>
+                            </compartment>
+                        </scope>
+                    </lane>
+                    <lane hadOnlyOneElement="false" entity-id="c5e98275-d3b2-4d55-9e24-d8b51fc3c9fd">
+                        <pattern type="http://www.mulesoft.org/schema/mule/core/logger" name="Logger" entity-id="d0995706-9f96-4d0d-84fb-dcfc50e8316a">
+                            <properties>
+<property value="No New Comments" name="message"/>
+<property value="DEBUG" name="level"/>
+<property name="category"/>
+                            </properties>
+                        </pattern>
+                    </lane>
+                </compartment>
+            </splitter>
+        </lane>
+    </flow>
+    <description></description>
+</mule-configuration>
