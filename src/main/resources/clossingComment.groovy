@@ -24,6 +24,9 @@ def theCommentBody = null;
 			case 9:
 				theCommentBody = "Closing issue, Thank You.";
 				break;
+			default:
+				theCommentBody = "Closing issue, Thank You.";
+				break;
 			}
 
 return theCommentBody;
