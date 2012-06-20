@@ -1,4 +1,8 @@
-def jiraIssueResolution = Integer.parseInt(message.getSessionProperty('jiraIssueResolution'));			
+def jiraIssueResolution = message.getSessionProperty('jiraIssueResolution');
+if (jiraIssueResolution.toString().equals("{NullPayload}")){
+	jiraIssueResolution = "9";
+}
+jiraIssueResolution = Integer.parseInt(jiraIssueResolution);
 def theCommentBody = null;
 			
 			switch(jiraIssueResolution){
@@ -16,6 +20,9 @@ def theCommentBody = null;
 				break;
 			case 5:
 				theCommentBody = "Unable to reproduce, Thank You.";
+				break;
+			case 9:
+				theCommentBody = "Closing issue, Thank You.";
 				break;
 			}
 

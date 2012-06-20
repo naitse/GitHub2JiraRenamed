@@ -49,9 +49,9 @@ http://www.mulesoft.org/schema/mule/ee/tracking http://www.mulesoft.org/schema/m
                         <scripting:component doc:name="Groovy">
                             <scripting:script engine="Groovy" file="clossingComment.groovy"/>
                         </scripting:component>
-                        <github:create-comment config-ref="Github" comment="#[payload]" issueId="#[groovy:message.getSessionProperty('issue2CloseGitIssueId')]" repository="#[groovy:message.getSessionProperty('issue2CloseRepoName')]" user="${git.orgName}" doc:name="Github"/>
+                        <github:create-comment config-ref="Github" comment="#[payload]" issueId="#[groovy:message.getSessionProperty('issue2CloseGitIssueId')]" repository="#[groovy:message.getSessionProperty('issue2CloseRepoName')]" user="${git.orgName}" doc:name="Create Github comment"/>
                         <logger message="[COMMENTED] at issue #[groovy:message.getSessionProperty('issue2CloseGitIssueId')] from repo #[groovy:message.getSessionProperty('issue2CloseRepoName')]" level="INFO" doc:name="Log the comment creation"/>
-                        <github:close-issue config-ref="Github" issueId="#[groovy:message.getSessionProperty('issue2CloseGitIssueId')]" repository="#[groovy:message.getSessionProperty('issue2CloseRepoName')]" user="${git.orgName}" doc:name="Github"/>
+                        <github:close-issue config-ref="Github" issueId="#[groovy:message.getSessionProperty('issue2CloseGitIssueId')]" repository="#[groovy:message.getSessionProperty('issue2CloseRepoName')]" user="${git.orgName}" doc:name="Close Github Issue"/>
                         <logger message="[CLOSED] issue #[groovy:message.getSessionProperty('issue2CloseGitIssueId')] from repo #[groovy:message.getSessionProperty('issue2CloseRepoName')]" level="INFO" doc:name="Log the close event"/>
                     </processor-chain>
                 </when>
